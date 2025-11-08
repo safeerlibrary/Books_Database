@@ -52,7 +52,8 @@ const SHEETS = [
   { name: "Question Paper", gid: "1475934526" }
 ];
 
-const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSB63Lx0NFr6yE9-EhAjkW8KoxCHrGTzpMniovT8auFrAg3PK6DUrtuQNYr3HVxjjuo5Q6tfA0BEk2m/pub?output=csv";
+// ✅ Correct Google Sheet CSV Base URL
+const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSB63Lx0NFr6yE9-EhAjkW8KoxCHrGTzpMniovT8auFrAg3PK6DUrtuQNYr3HVxjjuo5Q6tfA0BEk2m/pub?gid=";
 
 const cardsContainer = document.getElementById("cardsContainer");
 const classSelect = document.getElementById("classSelect");
@@ -72,7 +73,7 @@ async function fetchAllSheets() {
 
   try {
     const allData = await Promise.all(
-      SHEETS.map(s => fetch(BASE + s.gid).then(r => r.text()))
+      SHEETS.map(s => fetch(BASE + s.gid + "&single=true&output=csv").then(r => r.text()))
     );
 
     allRows = [];
@@ -87,10 +88,12 @@ async function fetchAllSheets() {
 
     applyFilter();
   } catch (e) {
+    console.error(e);
     cardsContainer.innerHTML = '<div class="col-span-full text-red-500 text-center py-12">Failed to load data.</div>';
   }
 }
 
+// ---- Normalize Each Row ----
 function normalizeRow(r) {
   return {
     SL: r["SL."] || "",
@@ -107,7 +110,7 @@ function normalizeRow(r) {
   };
 }
 
-// ---- Filtering ----
+// ---- Apply Filters ----
 function applyFilter() {
   const selected = classSelect.value;
   const query = searchInput.value.toLowerCase();
@@ -152,18 +155,14 @@ function renderCards() {
   });
 }
 
-// ---- Events ----
+// ---- Event Listeners ----
 searchInput.addEventListener("input", applyFilter);
 classSelect.addEventListener("change", applyFilter);
 reloadBtn.addEventListener("click", fetchAllSheets);
 
-// Load on Start
+// ---- Load on Start ----
 fetchAllSheets();
 </script>
 
 </body>
 </html>
-
-
-
-
