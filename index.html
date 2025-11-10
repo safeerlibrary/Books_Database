@@ -27,9 +27,8 @@
     </div>
   </nav>
 
-  <div class="p-4 text-sm text-gray-600 flex justify-between">
-    <div>Showing <span id="countDisplay">0</span> records</div>
-    <div id="lastUpdated" class="text-gray-400"></div>
+  <div class="p-4 text-sm text-gray-600">
+    Showing <span id="countDisplay">0</span> records
   </div>
 
   <div id="cardsContainer" class="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -53,7 +52,7 @@ const SHEETS = [
   { name: "Question Paper", gid: "882635163" }
 ];
 
-// ✅ Google Sheet CSV Base URL
+// ✅ Correct Google Sheet CSV Base URL
 const BASE = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSB63Lx0NFr6yE9-EhAjkW8KoxCHrGTzpMniovT8auFrAg3PK6DUrtuQNYr3HVxjjuo5Q6tfA0BEk2m/pub?gid=";
 
 const cardsContainer = document.getElementById("cardsContainer");
@@ -61,7 +60,6 @@ const classSelect = document.getElementById("classSelect");
 const searchInput = document.getElementById("searchInput");
 const reloadBtn = document.getElementById("reloadBtn");
 const countDisplay = document.getElementById("countDisplay");
-const lastUpdated = document.getElementById("lastUpdated");
 
 let allRows = [];
 let filteredRows = [];
@@ -72,7 +70,6 @@ classSelect.innerHTML = `<option>All Classes</option>` + SHEETS.map(s => `<optio
 // ---- Fetch All Sheets ----
 async function fetchAllSheets() {
   cardsContainer.innerHTML = '<div class="col-span-full text-gray-400 text-center py-12">Loading data...</div>';
-  lastUpdated.textContent = "";
 
   try {
     const allData = await Promise.all(
@@ -89,7 +86,6 @@ async function fetchAllSheets() {
       });
     });
 
-    lastUpdated.textContent = "Last Updated: " + new Date().toLocaleString();
     applyFilter();
   } catch (e) {
     console.error(e);
@@ -114,23 +110,24 @@ function normalizeRow(r) {
   };
 }
 
-// ---- Smart Search Matching ----
-function fuzzyMatch(text, query) {
-  const words = query.split(/\s+/).filter(Boolean);
-  return words.every(w => text.includes(w));
-}
-
-// ---- Apply Filters ----
+// ✅ ---- Apply Filter (Improved Multi-word Search) ----
 function applyFilter() {
   const selected = classSelect.value;
   const query = searchInput.value.toLowerCase().trim();
+  const queryWords = query.split(/\s+/).filter(Boolean);
 
-  filteredRows = allRows.filter(r => {
+  filteredRows = allRows.filter((r) => {
     let ok = selected === "All Classes" || r._sheet === selected;
 
-    if (query) {
-      const searchable = `${r["Book Name"]} ${r.Subject} ${r.Note}`.toLowerCase();
-      ok = ok && fuzzyMatch(searchable, query);
+    if (queryWords.length) {
+      const combinedText = [
+        r["Book Name"],
+        r.Subject,
+        r.Note,
+        r._sheet
+      ].join(" ").toLowerCase();
+
+      ok = ok && queryWords.every((word) => combinedText.includes(word));
     }
 
     return ok;
